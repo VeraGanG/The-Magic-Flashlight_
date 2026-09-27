@@ -1,0 +1,933 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5, user-scalable=yes">
+<title>The Magic Flashlight</title>
+<style>
+  :root {
+    --bg: #29243A;
+    --bg-deep: #1E1A2B;
+    --text: #F2EAD9;
+    --text-dim: #A79FB5;
+    --accent: #FFA94D;
+    --warm: #FFD88A;
+    --pencil: 'Segoe Print', 'Bradley Hand', 'Comic Sans MS', 'Comic Neue', cursive;
+    --ui: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+
+  body {
+    background: var(--bg);
+    background-image:
+      radial-gradient(circle at 15% 20%, rgba(181, 141, 214, 0.18) 0%, transparent 45%),
+      radial-gradient(circle at 85% 80%, rgba(255, 169, 77, 0.12) 0%, transparent 45%),
+      radial-gradient(circle at 50% 50%, rgba(255, 138, 76, 0.06) 0%, transparent 60%);
+    color: var(--text);
+    font-family: var(--ui);
+    font-size: 16px;
+    line-height: 1.5;
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px;
+  }
+
+  .stage {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+  }
+
+  .room-wrap {
+    position: relative;
+    display: inline-block;
+    line-height: 0;
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow:
+      0 24px 70px rgba(0, 0, 0, 0.75),
+      0 0 0 4px rgba(181, 141, 214, 0.35),
+      0 0 0 10px rgba(41, 36, 58, 0.7),
+      0 0 90px rgba(255, 138, 76, 0.15);
+    --beam-x: 50%;
+    --beam-y: 42%;
+    --beam-r: 200px;
+    cursor: none;
+  }
+
+  .room-img {
+    display: block;
+    max-height: 88vh;
+    max-width: 94vw;
+    width: auto;
+    height: auto;
+    user-select: none;
+    -webkit-user-drag: none;
+    pointer-events: none;
+    background: #3a2f4a;
+  }
+
+  .hotspots {
+    position: absolute;
+    inset: 0;
+    z-index: 3;
+    pointer-events: none;
+  }
+  .hotspot {
+    position: absolute;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    pointer-events: auto;
+    -webkit-tap-highlight-color: transparent;
+    outline: none;
+  }
+
+  .darkness {
+    position: absolute;
+    inset: 0;
+    background: rgba(8, 4, 18, 0.965);
+    z-index: 5;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.9s ease;
+    -webkit-mask-image: radial-gradient(
+      circle var(--beam-r) at var(--beam-x) var(--beam-y),
+      transparent 0%,
+      transparent 28%,
+      rgba(0,0,0,0.30) 52%,
+      rgba(0,0,0,0.70) 78%,
+      black 100%
+    );
+    mask-image: radial-gradient(
+      circle var(--beam-r) at var(--beam-x) var(--beam-y),
+      transparent 0%,
+      transparent 28%,
+      rgba(0,0,0,0.30) 52%,
+      rgba(0,0,0,0.70) 78%,
+      black 100%
+    );
+  }
+  .darkness.on { opacity: 1; }
+
+  .light-glow {
+    position: absolute;
+    inset: 0;
+    z-index: 6;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.9s ease;
+    background: radial-gradient(
+      circle var(--beam-r) at var(--beam-x) var(--beam-y),
+      rgba(255, 235, 170, 0.42) 0%,
+      rgba(255, 215, 130, 0.20) 38%,
+      rgba(255, 195, 100, 0.05) 66%,
+      transparent 88%
+    );
+    mix-blend-mode: screen;
+  }
+  .light-glow.on { opacity: 1; }
+
+  .flashlight {
+    --fw: 34%;
+    --fhidden: 0.55;
+
+    position: absolute;
+    left: 50%;
+    bottom: 0;
+    width: var(--fw);
+    transform: translate(-50%, calc(var(--fhidden) * 100%));
+    z-index: 14;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.8s ease;
+    filter:
+      drop-shadow(0 -4px 22px rgba(255, 220, 140, 0.55))
+      drop-shadow(0 -2px 8px rgba(255, 240, 180, 0.85));
+  }
+  .flashlight.on { opacity: 1; }
+
+  .flashlight img {
+    width: 100%;
+    height: auto;
+    display: block;
+    user-select: none;
+    -webkit-user-drag: none;
+  }
+
+  .sparkle-container {
+    position: absolute;
+    width: 0;
+    height: 0;
+    z-index: 20;
+    pointer-events: none;
+  }
+  .sparkle {
+    position: absolute;
+    top: 0; left: 0;
+    font-size: 1.7rem;
+    animation: sparkleFly 1.3s ease-out forwards;
+    filter: drop-shadow(0 0 10px rgba(255, 230, 150, 0.95));
+  }
+  @keyframes sparkleFly {
+    0% { transform: translate(-50%, -50%) scale(0.3); opacity: 0; }
+    25% { opacity: 1; }
+    100% {
+      transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(1.1);
+      opacity: 0;
+    }
+  }
+
+  .zone-flash {
+    position: absolute;
+    z-index: 18;
+    pointer-events: none;
+    border-radius: 16px;
+    background: radial-gradient(ellipse at center,
+      rgba(255, 245, 200, 0.9) 0%,
+      rgba(255, 220, 130, 0.5) 50%,
+      transparent 100%);
+    box-shadow:
+      0 0 70px 26px rgba(255, 220, 120, 0.85),
+      inset 0 0 50px rgba(255, 240, 180, 0.9);
+    animation: zoneFlash 1.05s ease-out forwards;
+  }
+  @keyframes zoneFlash {
+    0% { opacity: 0; transform: scale(0.65); }
+    30% { opacity: 1; transform: scale(1.03); }
+    100% { opacity: 0; transform: scale(1.1); }
+  }
+
+  .word-badge {
+    position: fixed;
+    top: 16px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-140%);
+    padding: 12px 30px;
+    background: linear-gradient(180deg, rgba(51, 45, 72, 0.95), rgba(41, 36, 58, 0.95));
+    border: 2px dashed rgba(255, 169, 77, 0.6);
+    border-radius: 40px;
+    font-family: var(--pencil);
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: var(--accent);
+    letter-spacing: 2px;
+    text-shadow: 0 0 16px rgba(255, 169, 77, 0.6);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.6), 0 0 30px rgba(255, 169, 77, 0.2);
+    z-index: 100;
+    pointer-events: none;
+    opacity: 0;
+    transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.35s;
+    white-space: nowrap;
+  }
+  .word-badge.show {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+  }
+  .word-badge .speaker {
+    display: inline-block;
+    margin-right: 8px;
+    animation: pulseIcon 1.4s ease-in-out infinite;
+  }
+  @keyframes pulseIcon {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.2); }
+  }
+
+  .screen-overlay {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.6s ease;
+    padding: 20px;
+    text-align: center;
+  }
+  .screen-overlay.active {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  #startOverlay {
+    background:
+      radial-gradient(circle at 50% 30%, rgba(181, 141, 214, 0.4) 0%, transparent 55%),
+      radial-gradient(circle at 15% 85%, rgba(255, 169, 77, 0.2) 0%, transparent 50%),
+      radial-gradient(circle at 85% 85%, rgba(181, 141, 214, 0.2) 0%, transparent 50%),
+      linear-gradient(180deg, #1E1A2B 0%, #29243A 100%);
+  }
+  #startOverlay::before {
+    content: '🎃  🦇  👻  🕸️  🕷️';
+    position: absolute;
+    top: 8%;
+    left: 0; right: 0;
+    text-align: center;
+    font-size: 2.4rem;
+    letter-spacing: 30px;
+    opacity: 0.75;
+    filter: drop-shadow(0 0 20px rgba(255, 169, 77, 0.5));
+  }
+  #startOverlay::after {
+    content: '✨  🌙  ✨';
+    position: absolute;
+    bottom: 6%;
+    left: 0; right: 0;
+    text-align: center;
+    font-size: 1.8rem;
+    letter-spacing: 24px;
+    opacity: 0.65;
+  }
+
+  .start-card {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 22px;
+    padding: 40px 32px;
+    max-width: 620px;
+    width: 100%;
+  }
+
+  .start-title {
+    font-family: var(--pencil);
+    font-size: clamp(2rem, 6vw, 3.4rem);
+    font-weight: 900;
+    color: var(--warm);
+    letter-spacing: 4px;
+    line-height: 1.05;
+    text-shadow:
+      0 0 20px rgba(255, 216, 138, 0.9),
+      0 0 50px rgba(255, 169, 77, 0.7),
+      0 4px 12px rgba(0, 0, 0, 0.7);
+    margin: 0;
+  }
+  .start-title .accent {
+    display: block;
+    color: var(--accent);
+    font-size: 0.55em;
+    letter-spacing: 8px;
+    margin-top: 6px;
+  }
+
+  .start-subtitle {
+    font-family: var(--pencil);
+    font-size: clamp(1.05rem, 2.4vw, 1.45rem);
+    color: var(--text);
+    letter-spacing: 3px;
+    font-weight: 600;
+    margin: 0;
+    padding: 10px 20px;
+    border-top: 2px dashed rgba(181, 141, 214, 0.4);
+    border-bottom: 2px dashed rgba(181, 141, 214, 0.4);
+  }
+
+  .start-hint {
+    font-size: 0.9rem;
+    color: var(--text-dim);
+    letter-spacing: 0.4px;
+    max-width: 420px;
+    line-height: 1.5;
+  }
+
+  .btn-zigzag {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 22px 60px;
+    font-family: var(--pencil);
+    font-size: clamp(1.2rem, 2.6vw, 1.6rem);
+    font-weight: 900;
+    letter-spacing: 4px;
+    color: var(--bg-deep);
+    background: linear-gradient(180deg, #FFBC72 0%, #FFA94D 55%, #E88B2E 100%);
+    border: none;
+    cursor: pointer;
+    clip-path: polygon(
+      0% 12px, 4% 0, 8% 12px, 12% 0, 16% 12px, 20% 0, 24% 12px, 28% 0,
+      32% 12px, 36% 0, 40% 12px, 44% 0, 48% 12px, 52% 0, 56% 12px, 60% 0,
+      64% 12px, 68% 0, 72% 12px, 76% 0, 80% 12px, 84% 0, 88% 12px, 92% 0,
+      96% 12px, 100% 0,
+      100% calc(100% - 12px), 96% 100%, 92% calc(100% - 12px), 88% 100%,
+      84% calc(100% - 12px), 80% 100%, 76% calc(100% - 12px), 72% 100%,
+      68% calc(100% - 12px), 64% 100%, 60% calc(100% - 12px), 56% 100%,
+      52% calc(100% - 12px), 48% 100%, 44% calc(100% - 12px), 40% 100%,
+      36% calc(100% - 12px), 32% 100%, 28% calc(100% - 12px), 24% 100%,
+      20% calc(100% - 12px), 16% 100%, 12% calc(100% - 12px), 8% 100%,
+      4% calc(100% - 12px), 0 100%
+    );
+    transition: transform 0.22s, filter 0.22s;
+    filter:
+      drop-shadow(0 10px 26px rgba(255, 169, 77, 0.55))
+      drop-shadow(0 0 20px rgba(255, 216, 138, 0.4));
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  .btn-zigzag:hover {
+    transform: translateY(-3px) scale(1.03);
+    filter:
+      drop-shadow(0 16px 34px rgba(255, 169, 77, 0.75))
+      drop-shadow(0 0 32px rgba(255, 216, 138, 0.65));
+  }
+  .btn-zigzag:active { transform: translateY(0) scale(0.97); }
+
+  #endOverlay {
+    background:
+      radial-gradient(circle at 50% 40%, rgba(255, 216, 138, 0.18) 0%, transparent 60%),
+      linear-gradient(180deg, #1E1A2B 0%, #29243A 100%);
+    gap: 26px;
+  }
+  #endOverlay::before {
+    content: '🎉  ✨  🏆  ✨  🎉';
+    position: absolute;
+    top: 5%;
+    left: 0; right: 0;
+    text-align: center;
+    font-size: 2rem;
+    letter-spacing: 26px;
+    opacity: 0.85;
+    filter: drop-shadow(0 0 22px rgba(255, 216, 138, 0.7));
+  }
+
+  .final-img {
+    display: block;
+    max-height: 62vh;
+    max-width: 88vw;
+    width: auto;
+    height: auto;
+    border-radius: 20px;
+    box-shadow:
+      0 24px 70px rgba(0, 0, 0, 0.8),
+      0 0 0 4px rgba(255, 216, 138, 0.55),
+      0 0 90px rgba(255, 216, 138, 0.45);
+    position: relative;
+    z-index: 1;
+    animation: finalReveal 1.4s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  @keyframes finalReveal {
+    0% { opacity: 0; transform: scale(0.82) translateY(30px); filter: brightness(0.4); }
+    100% { opacity: 1; transform: scale(1) translateY(0); filter: brightness(1); }
+  }
+
+  .final-caption {
+    font-family: var(--pencil);
+    font-size: clamp(1.3rem, 3.4vw, 2rem);
+    font-weight: 900;
+    color: var(--warm);
+    letter-spacing: 3px;
+    text-shadow:
+      0 0 20px rgba(255, 216, 138, 0.9),
+      0 0 50px rgba(255, 169, 77, 0.7),
+      0 4px 12px rgba(0, 0, 0, 0.7);
+    position: relative;
+    z-index: 1;
+  }
+
+  @media (max-width: 700px) {
+    .room-img { max-height: 78vh; max-width: 98vw; }
+    .flashlight { --fw: 44%; --fhidden: 0.50; }
+    .btn-zigzag { padding: 20px 44px; letter-spacing: 3px; }
+    .word-badge { font-size: 1.1rem; padding: 10px 22px; letter-spacing: 1.5px; }
+    .start-card { padding: 24px 16px; gap: 18px; }
+    .final-img { max-height: 55vh; }
+  }
+
+  @media (max-width: 420px) {
+    .btn-zigzag { padding: 18px 36px; letter-spacing: 2px; }
+    .start-title { letter-spacing: 2px; }
+    .start-subtitle { letter-spacing: 2px; padding: 8px 14px; }
+    .word-badge { font-size: 1rem; padding: 9px 18px; }
+    .flashlight { --fw: 52%; }
+  }
+</style>
+</head>
+<body>
+
+<div class="stage">
+  <div class="room-wrap" id="roomWrap">
+    <img class="room-img" id="roomImg" src="room.png" alt="Halloween room"
+         onerror="this.onerror=null;this.src='room.jpg'">
+
+    <div class="hotspots" id="hotspots"></div>
+    <div class="darkness" id="darkness"></div>
+    <div class="light-glow" id="lightGlow"></div>
+
+    <div class="flashlight" id="flashlight">
+      <img src="flashlight.png" alt="flashlight"
+           onerror="this.onerror=null;this.src='flashlight.jpg'">
+    </div>
+
+    <div class="sparkle-container" id="sparkleContainer"></div>
+  </div>
+</div>
+
+<div class="word-badge" id="wordBadge">
+  <span class="speaker">🔊</span><span id="wordText">...</span>
+</div>
+
+<div class="screen-overlay active" id="startOverlay">
+  <div class="start-card">
+    <h1 class="start-title">
+      THE MAGIC
+      <span class="accent">FLASHLIGHT</span>
+    </h1>
+    <p class="start-subtitle">Listen. Look. Find!</p>
+    <p class="start-hint">
+      The beam moves on its own. Move your mouse (or finger) to guide it.<br>
+      Click the object when the light finds it.
+    </p>
+    <button class="btn-zigzag" id="startBtn" type="button">🎃 START</button>
+  </div>
+</div>
+
+<div class="screen-overlay" id="endOverlay">
+  <img class="final-img" id="finalImg" src="final.png" alt="final"
+       onerror="this.onerror=null;this.src='final.jpg'">
+  <div class="final-caption">✨ YOU WIN! ✨</div>
+  <button class="btn-zigzag" id="playAgainBtn" type="button">🔄 PLAY AGAIN</button>
+</div>
+
+<script>
+(function() {
+  'use strict';
+
+  // ============================================================
+  //  БАЗОВЫЙ НАБОР СЛОВ (не меняется)
+  //  Реальный порядок формируется заново в shuffleWords()
+  // ============================================================
+  const WORD_POOL = ['witch', 'bat', 'cat', 'lamp', 'book', 'pumpkin', 'table', 'ghost'];
+
+  // Текущий (перемешанный) порядок. Заполняется при старте игры.
+  let WORD_ORDER = [...WORD_POOL];
+
+  // Fisher-Yates — каждый раз новый порядок
+  function shuffleWords() {
+    const a = [...WORD_POOL];
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    WORD_ORDER = a;
+  }
+
+  const HOTSPOTS = [
+    { item: 'table',   x: 20, y: 54, w: 67, h: 41, z: 1 },
+    { item: 'book',    x: 30, y: 44, w: 32, h: 32, z: 2 },
+    { item: 'cat',     x: 23, y: 33, w: 8,  h: 18, z: 4 },
+    { item: 'lamp',    x: 30, y: 18, w: 14, h: 32, z: 4 },
+    { item: 'pumpkin', x: 48, y: 19, w: 8,  h: 15, z: 4 },
+    { item: 'witch',   x: 9,  y: 24, w: 13, h: 27, z: 5 },
+    { item: 'bat',     x: 12, y: 6,  w: 9,  h: 11, z: 5 },
+    { item: 'ghost',   x: 74, y: 26, w: 21, h: 33, z: 5 }
+  ];
+
+  const BEAM_RADIUS_FACTOR = 0.22;
+  const BEAM_MIN_RADIUS    = 160;
+  const LIT_FACTOR         = 0.85;
+  const DRIFT_SPEED = 8;
+  const FOLLOW_SPEED = 55;
+  const IDLE_TIMEOUT = 2200;
+
+  const roomWrap         = document.getElementById('roomWrap');
+  const roomImg          = document.getElementById('roomImg');
+  const hotspotsEl       = document.getElementById('hotspots');
+  const darkness         = document.getElementById('darkness');
+  const lightGlow        = document.getElementById('lightGlow');
+  const flashlight       = document.getElementById('flashlight');
+  const sparkleContainer = document.getElementById('sparkleContainer');
+  const wordBadge        = document.getElementById('wordBadge');
+  const wordText         = document.getElementById('wordText');
+  const startOverlay     = document.getElementById('startOverlay');
+  const endOverlay       = document.getElementById('endOverlay');
+  const startBtn         = document.getElementById('startBtn');
+  const playAgainBtn     = document.getElementById('playAgainBtn');
+
+  function makeAudio(src) {
+    const a = new Audio();
+    a.preload = 'auto';
+    a.src = src;
+    return a;
+  }
+  const sounds = {
+    background: makeAudio('background.mp3'),
+    switch:     makeAudio('switch.mp3'),
+    purr:       makeAudio('purr.mp3'),
+    laugh:      makeAudio('laugh.mp3'),
+    victory:    makeAudio('victory.mp3'),
+    witch:      makeAudio('witch.mp3'),
+    bat:        makeAudio('bat.mp3'),
+    cat:        makeAudio('cat.mp3'),
+    lamp:       makeAudio('lamp.mp3'),
+    book:       makeAudio('book.mp3'),
+    pumpkin:    makeAudio('pumpkin.mp3'),
+    table:      makeAudio('table.mp3'),
+    ghost:      makeAudio('ghost.mp3')
+  };
+  sounds.background.loop = true;
+  sounds.background.volume = 0.18;
+  sounds.switch.volume  = 0.9;
+  sounds.purr.volume    = 0.95;
+  sounds.laugh.volume   = 0.85;
+  sounds.victory.volume = 0.9;
+  WORD_POOL.forEach(k => { sounds[k].volume = 1.0; });
+
+  function playSound(name) {
+    const a = sounds[name];
+    if (!a) return;
+    try { a.currentTime = 0; const p = a.play(); if (p && p.catch) p.catch(() => {}); } catch (e) {}
+  }
+  function stopSound(name) {
+    const a = sounds[name];
+    if (!a) return;
+    try { a.pause(); a.currentTime = 0; } catch (e) {}
+  }
+  function stopAllWords() { WORD_POOL.forEach(k => stopSound(k)); }
+
+  const state = {
+    phase: 'start',
+    currentIndex: 0,
+    beam: { x: 50, y: 42 },
+    cursorTarget: null,
+    driftT: 0,
+    lastPointerMove: 0,
+    radius: 200,
+    rafId: null,
+    lastTs: 0
+  };
+
+  function initHotspots() {
+    hotspotsEl.innerHTML = '';
+    HOTSPOTS.forEach(h => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'hotspot';
+      btn.dataset.item = h.item;
+      btn.style.left   = h.x + '%';
+      btn.style.top    = h.y + '%';
+      btn.style.width  = h.w + '%';
+      btn.style.height = h.h + '%';
+      if (h.z) btn.style.zIndex = h.z;
+      btn.setAttribute('aria-label', h.item);
+      btn.addEventListener('click', (e) => onHotspotClick(h.item, e));
+      hotspotsEl.appendChild(btn);
+    });
+  }
+
+  function updateRadius() {
+    const rect = roomImg.getBoundingClientRect();
+    state.radius = Math.max(BEAM_MIN_RADIUS, rect.width * BEAM_RADIUS_FACTOR);
+    roomWrap.style.setProperty('--beam-r', state.radius + 'px');
+  }
+
+  function updateBeamCSS() {
+    roomWrap.style.setProperty('--beam-x', state.beam.x.toFixed(2) + '%');
+    roomWrap.style.setProperty('--beam-y', state.beam.y.toFixed(2) + '%');
+  }
+
+  function beamTick(ts) {
+    if (state.phase !== 'search' && state.phase !== 'pause') {
+      state.rafId = null;
+      return;
+    }
+
+    if (!state.lastTs) state.lastTs = ts;
+    const dt = Math.min(0.05, (ts - state.lastTs) / 1000);
+    state.lastTs = ts;
+
+    const now = performance.now();
+    const idle = (now - state.lastPointerMove) > IDLE_TIMEOUT;
+
+    let targetX, targetY, speed;
+    if (!idle && state.cursorTarget) {
+      targetX = state.cursorTarget.x;
+      targetY = state.cursorTarget.y;
+      speed = FOLLOW_SPEED;
+    } else {
+      state.driftT += dt * 0.42;
+      targetX = 50 + Math.sin(state.driftT) * 32;
+      targetY = 45 + Math.cos(state.driftT * 1.31) * 28;
+      speed = DRIFT_SPEED;
+    }
+
+    const dx = targetX - state.beam.x;
+    const dy = targetY - state.beam.y;
+    const dist = Math.hypot(dx, dy);
+
+    if (dist > 0.25) {
+      const move = Math.min(dist, speed * dt);
+      state.beam.x += (dx / dist) * move;
+      state.beam.y += (dy / dist) * move;
+    }
+
+    const wobbleT = now * 0.001;
+    const wobX = Math.sin(wobbleT * 1.7) * 0.35;
+    const wobY = Math.cos(wobbleT * 2.1) * 0.35;
+
+    roomWrap.style.setProperty('--beam-x', (state.beam.x + wobX).toFixed(2) + '%');
+    roomWrap.style.setProperty('--beam-y', (state.beam.y + wobY).toFixed(2) + '%');
+
+    state.rafId = requestAnimationFrame(beamTick);
+  }
+
+  function startBeam() {
+    if (state.rafId) return;
+    state.lastTs = 0;
+    state.rafId = requestAnimationFrame(beamTick);
+  }
+  function stopBeam() {
+    if (state.rafId) { cancelAnimationFrame(state.rafId); state.rafId = null; }
+  }
+
+  function initPointerTracking() {
+    const updateCursorTarget = (clientX, clientY) => {
+      const rect = roomImg.getBoundingClientRect();
+      const inside =
+        clientX >= rect.left && clientX <= rect.right &&
+        clientY >= rect.top  && clientY <= rect.bottom;
+      if (!inside) { state.cursorTarget = null; return; }
+
+      state.cursorTarget = {
+        x: ((clientX - rect.left) / rect.width)  * 100,
+        y: ((clientY - rect.top)  / rect.height) * 100
+      };
+      state.lastPointerMove = performance.now();
+    };
+
+    window.addEventListener('mousemove', (e) => updateCursorTarget(e.clientX, e.clientY));
+
+    window.addEventListener('touchmove', (e) => {
+      if (!e.touches || e.touches.length === 0) return;
+      const t = e.touches[0];
+      updateCursorTarget(t.clientX, t.clientY);
+    }, { passive: true });
+
+    window.addEventListener('touchstart', (e) => {
+      if (!e.touches || e.touches.length === 0) return;
+      const t = e.touches[0];
+      updateCursorTarget(t.clientX, t.clientY);
+    }, { passive: true });
+  }
+
+  function isPointLit(clientX, clientY) {
+    const rect = roomImg.getBoundingClientRect();
+    const cx = rect.left + (state.beam.x / 100) * rect.width;
+    const cy = rect.top  + (state.beam.y / 100) * rect.height;
+    const d = Math.hypot(clientX - cx, clientY - cy);
+    return d < state.radius * LIT_FACTOR;
+  }
+
+  function onHotspotClick(item, e) {
+    if (state.phase !== 'search') return;
+    if (!isPointLit(e.clientX, e.clientY)) return;
+
+    const currentWord = WORD_ORDER[state.currentIndex];
+    if (item === currentWord) {
+      handleCorrect(item, e);
+    } else {
+      handleWrong();
+    }
+  }
+
+  function handleCorrect(item, e) {
+    state.phase = 'pause';
+    playSound('purr');
+    flashZone(item);
+    spawnSparkles(e.clientX, e.clientY);
+
+    setTimeout(() => {
+      state.currentIndex++;
+      if (state.currentIndex >= WORD_ORDER.length) {
+        endGame();
+      } else {
+        state.phase = 'search';
+        playCurrentWord();
+      }
+    }, 1300);
+  }
+
+  function handleWrong() {
+    playSound('laugh');
+  }
+
+  function flashZone(item) {
+    const h = HOTSPOTS.find(x => x.item === item);
+    if (!h) return;
+    const flash = document.createElement('div');
+    flash.className = 'zone-flash';
+    flash.style.left   = h.x + '%';
+    flash.style.top    = h.y + '%';
+    flash.style.width  = h.w + '%';
+    flash.style.height = h.h + '%';
+    roomWrap.appendChild(flash);
+    setTimeout(() => flash.remove(), 1200);
+  }
+
+  function spawnSparkles(clientX, clientY) {
+    const rect = roomWrap.getBoundingClientRect();
+    sparkleContainer.style.left = (clientX - rect.left) + 'px';
+    sparkleContainer.style.top  = (clientY - rect.top) + 'px';
+
+    const symbols = ['✨', '⭐', '💫', '🌟', '✨'];
+    const count = 10;
+    for (let i = 0; i < count; i++) {
+      const sp = document.createElement('div');
+      sp.className = 'sparkle';
+      sp.textContent = symbols[Math.floor(Math.random() * symbols.length)];
+      const angle = (i / count) * Math.PI * 2 + (Math.random() - 0.5) * 0.4;
+      const dist = 45 + Math.random() * 55;
+      sp.style.setProperty('--dx', (Math.cos(angle) * dist).toFixed(1) + 'px');
+      sp.style.setProperty('--dy', (Math.sin(angle) * dist).toFixed(1) + 'px');
+      sp.style.animationDelay = (Math.random() * 0.18) + 's';
+      sparkleContainer.appendChild(sp);
+      setTimeout(() => sp.remove(), 1600);
+    }
+  }
+
+  function playCurrentWord() {
+    const word = WORD_ORDER[state.currentIndex];
+    if (!word) return;
+
+    wordText.textContent = word.toUpperCase();
+    wordBadge.classList.add('show');
+
+    stopAllWords();
+    playSound(word);
+
+    clearTimeout(playCurrentWord._t);
+    playCurrentWord._t = setTimeout(() => {
+      wordBadge.classList.remove('show');
+    }, 2600);
+  }
+
+  function startGame() {
+    // ★ Каждый старт — новый порядок слов
+    shuffleWords();
+
+    startOverlay.classList.remove('active');
+
+    try {
+      sounds.background.currentTime = 0;
+      const p = sounds.background.play();
+      if (p && p.catch) p.catch(() => {});
+    } catch (e) {}
+
+    state.currentIndex = 0;
+    state.phase = 'memorize';
+    state.beam.x = 50;
+    state.beam.y = 42;
+    state.cursorTarget = null;
+    state.driftT = 0;
+    state.lastPointerMove = 0;
+    updateBeamCSS();
+    updateRadius();
+
+    darkness.classList.remove('on');
+    lightGlow.classList.remove('on');
+    flashlight.classList.remove('on');
+
+    setTimeout(() => {
+      playSound('switch');
+      darkness.classList.add('on');
+      lightGlow.classList.add('on');
+      flashlight.classList.add('on');
+
+      setTimeout(() => {
+        state.phase = 'search';
+        playCurrentWord();
+        startBeam();
+      }, 900);
+    }, 5000);
+  }
+
+  function endGame() {
+    state.phase = 'end';
+    stopBeam();
+    stopAllWords();
+    try { sounds.background.pause(); } catch (e) {}
+
+    playSound('victory');
+
+    darkness.classList.remove('on');
+    lightGlow.classList.remove('on');
+    flashlight.classList.remove('on');
+    wordBadge.classList.remove('show');
+
+    setTimeout(() => {
+      endOverlay.classList.add('active');
+    }, 1700);
+  }
+
+  function playAgain() {
+    endOverlay.classList.remove('active');
+    stopAllWords();
+    stopBeam();
+    setTimeout(startGame, 400);
+  }
+
+  function init() {
+    initHotspots();
+    initPointerTracking();
+    updateRadius();
+    updateBeamCSS();
+
+    startBtn.addEventListener('click', startGame);
+    playAgainBtn.addEventListener('click', playAgain);
+
+    window.addEventListener('resize', () => {
+      updateRadius();
+      updateBeamCSS();
+    });
+    window.addEventListener('orientationchange', () => {
+      setTimeout(() => { updateRadius(); updateBeamCSS(); }, 100);
+    });
+
+    document.addEventListener('pointerdown', function once() {
+      ['switch','purr','laugh','victory'].forEach(k => {
+        try {
+          const a = sounds[k];
+          a.volume = 0;
+          const p = a.play();
+          if (p && p.then) {
+            p.then(() => {
+              a.pause(); a.currentTime = 0;
+              a.volume = k === 'purr' ? 0.95 : (k === 'laugh' ? 0.85 : 0.9);
+            }).catch(() => {});
+          }
+        } catch (e) {}
+      });
+      document.removeEventListener('pointerdown', once);
+    }, { once: true });
+  }
+
+  if (roomImg.complete && roomImg.naturalWidth) {
+    init();
+  } else {
+    roomImg.addEventListener('load', init);
+    setTimeout(() => {
+      if (!hotspotsEl.children.length) init();
+    }, 500);
+  }
+
+  window.addEventListener('load', () => {
+    updateRadius();
+    updateBeamCSS();
+  });
+
+})();
+</script>
+</body>
+</html>
