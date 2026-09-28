@@ -84,7 +84,8 @@
     background: #3a2f4a;
   }
 
-  @media (hover: none) and (pointer: coarse) {
+  /* ===== ПОРТРЕТ (мобильный) ===== */
+  @media (hover: none) and (pointer: coarse) and (orientation: portrait) {
     body {
       padding: 8px 6px;
       padding-top: max(8px, env(safe-area-inset-top));
@@ -99,6 +100,80 @@
       max-width: none;
       max-height: none;
       object-fit: contain;
+    }
+  }
+
+  /* ===== ★★★ ЛАНДШАФТ (мобильный) — картинка заполняет весь экран ===== */
+  @media (hover: none) and (pointer: coarse) and (orientation: landscape) {
+    body {
+      padding: 0;
+      padding-top: env(safe-area-inset-top, 0px);
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+      padding-left: env(safe-area-inset-left, 0px);
+      padding-right: env(safe-area-inset-right, 0px);
+    }
+    .stage {
+      width: 100%;
+      height: 100%;
+    }
+    .room-wrap {
+      display: block;
+      width: 100% !important;
+      height: 100% !important;
+      border-radius: 0;
+      box-shadow: none;
+    }
+    .room-img {
+      width: 100% !important;
+      height: 100% !important;
+      max-width: none !important;
+      max-height: none !important;
+      object-fit: fill;
+    }
+    .flashlight {
+      --fw: 14%;
+      --fhidden: 0.55;
+    }
+    .word-badge {
+      font-size: 0.95rem;
+      padding: 8px 20px;
+      letter-spacing: 1.2px;
+    }
+    .final-img {
+      max-height: 70vh;
+      max-width: 60vw;
+    }
+    #endOverlay { padding: 12px 20px; }
+    #endOverlay::before {
+      font-size: 1.3rem; letter-spacing: 16px; top: 2%;
+    }
+    .final-caption { font-size: 1.2rem; }
+    #endOverlay .btn-zigzag {
+      padding: 12px 36px; font-size: 1rem; letter-spacing: 2px;
+    }
+    #startOverlay .start-card {
+      gap: 14px; padding: 16px 20px;
+    }
+    #startOverlay .start-title {
+      font-size: 1.7rem; letter-spacing: 2px;
+    }
+    #startOverlay .start-title .accent {
+      letter-spacing: 4px; margin-top: 2px;
+    }
+    #startOverlay .start-subtitle {
+      font-size: 0.95rem; padding: 6px 14px; letter-spacing: 2px;
+    }
+    #startOverlay .start-hint {
+      font-size: 0.8rem; max-width: 520px;
+    }
+    #startOverlay::before {
+      font-size: 1.3rem; letter-spacing: 16px; top: 3%;
+    }
+    #startOverlay::after {
+      font-size: 1rem; letter-spacing: 12px; bottom: 3%;
+    }
+    #startOverlay .btn-zigzag {
+      padding: 13px 40px; font-size: 1rem; letter-spacing: 2px;
     }
   }
 
@@ -406,41 +481,19 @@
     margin: auto;
   }
 
-  @media (max-width: 700px) {
+  @media (max-width: 700px) and (orientation: portrait) {
     .flashlight { --fw: 44%; --fhidden: 0.50; }
     .btn-zigzag { padding: 20px 44px; letter-spacing: 3px; }
     .word-badge { font-size: 1.1rem; padding: 10px 22px; letter-spacing: 1.5px; }
     .start-card { padding: 24px 16px; gap: 18px; }
     .final-img { max-height: 48vh; max-width: 85vw; }
   }
-  @media (max-width: 420px) {
+  @media (max-width: 420px) and (orientation: portrait) {
     .btn-zigzag { padding: 18px 36px; letter-spacing: 2px; }
     .start-title { letter-spacing: 2px; }
     .start-subtitle { letter-spacing: 2px; padding: 8px 14px; }
     .word-badge { font-size: 1rem; padding: 9px 18px; }
     .flashlight { --fw: 52%; }
-  }
-
-  @media (orientation: landscape) and (max-height: 560px) {
-    #endOverlay {
-      gap: 10px;
-      padding: 12px 20px;
-    }
-    #endOverlay::before {
-      font-size: 1.2rem; letter-spacing: 14px; top: 2%; opacity: 0.6;
-    }
-    .final-img { max-height: 55vh; max-width: 52vw; border-radius: 12px; }
-    .final-caption { font-size: 1.1rem; letter-spacing: 2px; }
-    #endOverlay .btn-zigzag { padding: 12px 36px; font-size: 1rem; letter-spacing: 2px; }
-
-    .start-card { gap: 12px; padding: 16px 20px; }
-    .start-title { font-size: 1.6rem; letter-spacing: 2px; }
-    .start-title .accent { letter-spacing: 4px; margin-top: 2px; }
-    .start-subtitle { font-size: 0.95rem; padding: 6px 14px; letter-spacing: 2px; }
-    .start-hint { font-size: 0.82rem; max-width: 500px; }
-    #startOverlay::before { font-size: 1.4rem; letter-spacing: 16px; top: 3%; }
-    #startOverlay::after { font-size: 1rem; letter-spacing: 12px; bottom: 3%; }
-    #startOverlay .btn-zigzag { padding: 14px 40px; font-size: 1.05rem; letter-spacing: 2px; }
   }
 </style>
 </head>
@@ -494,9 +547,6 @@
 (function() {
   'use strict';
 
-  // ============================================================
-  //  ★ ИСПРАВЛЕНО: более надёжное определение тач-устройства
-  // ============================================================
   const IS_TOUCH =
     ('ontouchstart' in window) ||
     (navigator.maxTouchPoints > 0) ||
@@ -535,9 +585,7 @@
   const TAP_TOLERANCE_PCT = 4;
   const TAP_MAX_MOVE_PX   = 18;
   const TAP_MAX_DURATION  = 900;
-
-  // ★ Защита от «click» сразу после «touchend» — не даём звучать двум звукам подряд
-  const CLICK_AFTER_TOUCH_GUARD = 600; // мс
+  const CLICK_AFTER_TOUCH_GUARD = 600;
   let lastTouchEndTime = 0;
 
   const roomWrap         = document.getElementById('roomWrap');
@@ -554,9 +602,6 @@
   const startBtn         = document.getElementById('startBtn');
   const playAgainBtn     = document.getElementById('playAgainBtn');
 
-  // ============================================================
-  //  АУДИО
-  // ============================================================
   function makeAudio(src) {
     const a = new Audio();
     a.preload = 'auto';
@@ -607,17 +652,12 @@
   }
   function stopAllWords() { WORD_POOL.forEach(k => stopSound(k)); }
 
-  // ============================================================
-  //  ★★★ ИСПРАВЛЕНО: unlockAudio больше НЕ трогает background.mp3
-  //  Иначе фоновую музыку каждый тап ставит на паузу, и она исчезает.
-  // ============================================================
   const UNLOCK_KEYS = ['switch','purr','laugh','victory','witch','bat','cat','lamp','book','pumpkin','table','ghost'];
   let audioUnlockAttempts = 0;
 
   function unlockAudio() {
     if (audioUnlockAttempts >= 3) return;
     audioUnlockAttempts++;
-
     UNLOCK_KEYS.forEach(k => {
       const a = sounds[k];
       if (!a) return;
@@ -663,15 +703,11 @@
       if (h.z) btn.style.zIndex = h.z;
       btn.setAttribute('aria-label', h.item);
 
-      // ★★★ ИСПРАВЛЕНО: click только для МЫШИ + защита от недавнего touchend.
       btn.addEventListener('click', (e) => {
-        // Если это было тач-устройство → игнорируем (обрабатывается в touchend)
         if (IS_TOUCH) return;
-        // Если недавно был touchend — игнорируем (защита от двойного звука)
         if (performance.now() - lastTouchEndTime < CLICK_AFTER_TOUCH_GUARD) return;
         if (state.phase !== 'search') return;
         if (!isPointLit(e.clientX, e.clientY)) return;
-
         const currentWord = WORD_ORDER[state.currentIndex];
         if (h.item === currentWord) handleCorrect(h.item, e);
         else handleWrong();
@@ -681,8 +717,30 @@
     });
   }
 
+  // ============================================================
+  //  РАЗМЕР КОМНАТЫ
+  //  • Портрет (touch) — contain, JS-расчёт
+  //  • Ландшафт (touch) — CSS задаёт полный размер, JS не вмешивается
+  //  • Десктоп — CSS (max-height: 88vh)
+  // ============================================================
   function sizeRoomMobile() {
     if (!IS_TOUCH) return;
+
+    const isLandscape = window.innerWidth > window.innerHeight;
+
+    if (isLandscape) {
+      // Очищаем inline-стили — размер задаёт CSS (100% × 100%, object-fit: fill)
+      roomWrap.style.width = '';
+      roomWrap.style.height = '';
+      // Пересчитываем радиус луча под получившийся размер
+      requestAnimationFrame(() => {
+        updateRadius();
+        updateBeamCSS();
+      });
+      return;
+    }
+
+    // Портрет — contain внутри доступного места
     const stage = document.querySelector('.stage');
     const availW = stage.clientWidth;
     const availH = stage.clientHeight;
@@ -832,18 +890,14 @@
     }, { passive: false });
 
     window.addEventListener('touchend', (e) => {
-      // ★ Запоминаем время touchend — для защиты от «click» после него
       lastTouchEndTime = performance.now();
-
       if (state.phase !== 'search') { touchInfo = null; return; }
       if (!touchInfo) return;
       const info = touchInfo;
       touchInfo = null;
-
       if (info.moved) return;
       const dur = performance.now() - info.startTime;
       if (dur > TAP_MAX_DURATION) return;
-
       const t = e.changedTouches && e.changedTouches[0];
       if (!t) return;
       selectAt(t.clientX, t.clientY);
@@ -852,16 +906,12 @@
     window.addEventListener('touchcancel', () => { touchInfo = null; }, { passive: true });
   }
 
-  // ★★★ ИСПРАВЛЕНО: добавлена проверка state.phase — чтобы при активном
-  // «пауза после правильного ответа» повторный тап не вызвал второй звук.
   function selectAt(clientX, clientY) {
     if (state.phase !== 'search') return;
-
     const rect = roomWrap.getBoundingClientRect();
     if (rect.width === 0) return;
     const px = ((clientX - rect.left) / rect.width)  * 100;
     const py = ((clientY - rect.top)  / rect.height) * 100;
-
     if (px < -8 || px > 108 || py < -8 || py > 108) return;
 
     const sorted = [...HOTSPOTS].sort((a, b) => (b.z || 0) - (a.z || 0));
@@ -888,26 +938,21 @@
   }
 
   function handleCorrect(item, e) {
-    // Защита от повторного вызова — но phase проверяется выше
     state.phase = 'pause';
     playSound('purr');
     flashZone(item);
     spawnSparkles(e.clientX, e.clientY);
-
     setTimeout(() => {
       state.currentIndex++;
-      if (state.currentIndex >= WORD_ORDER.length) {
-        endGame();
-      } else {
+      if (state.currentIndex >= WORD_ORDER.length) endGame();
+      else {
         state.phase = 'search';
         playCurrentWord();
       }
     }, 1300);
   }
 
-  function handleWrong() {
-    playSound('laugh');
-  }
+  function handleWrong() { playSound('laugh'); }
 
   function flashZone(item) {
     const h = HOTSPOTS.find(x => x.item === item);
@@ -956,22 +1001,16 @@
   }
 
   function startGame() {
-    // Ещё одна попытка разблокировать короткие звуки (не трогает background)
     unlockAudio();
-
     shuffleWords();
     startOverlay.classList.remove('active');
 
-    // ★★★ ИСПРАВЛЕНО: запуск фоновой музыки в startGame — с явной установкой
-    // громкости и позиции. Так как это происходит в ответ на user gesture
-    // (тап по START), автоплей-политика не блокирует.
     try {
       const bg = sounds.background;
       bg.volume = BASE_VOLUMES.background;
       bg.currentTime = 0;
       const p = bg.play();
       if (p && p.catch) p.catch(() => {
-        // Если браузер заблокировал — попробуем ещё раз чуть позже
         setTimeout(() => {
           try {
             bg.volume = BASE_VOLUMES.background;
@@ -989,8 +1028,11 @@
     state.cursorTarget = null;
     state.driftT = 0;
     state.lastPointerMove = 0;
+
+    // ★ Перед стартом пересчитаем размер — важно, если пользователь
+    // повернул телефон прямо перед тапом START
+    sizeRoomMobile();
     updateBeamCSS();
-    updateRadius();
 
     darkness.classList.remove('on');
     lightGlow.classList.remove('on');
@@ -1001,7 +1043,6 @@
       darkness.classList.add('on');
       lightGlow.classList.add('on');
       flashlight.classList.add('on');
-
       setTimeout(() => {
         state.phase = 'search';
         playCurrentWord();
@@ -1050,7 +1091,12 @@
         sizeRoomMobile();
         updateRadius();
         updateBeamCSS();
-      }, 200);
+      }, 250);
+      setTimeout(() => {
+        sizeRoomMobile();
+        updateRadius();
+        updateBeamCSS();
+      }, 700);
     });
     if ('visualViewport' in window) {
       window.visualViewport.addEventListener('resize', () => {
@@ -1060,7 +1106,6 @@
       });
     }
 
-    // Разблокировка коротких звуков
     document.addEventListener('pointerdown', unlockAudio, { passive: true });
     document.addEventListener('touchstart', unlockAudio, { passive: true });
   }
