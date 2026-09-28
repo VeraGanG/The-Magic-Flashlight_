@@ -70,11 +70,8 @@
     --beam-r: 200px;
     cursor: none;
     touch-action: none;
-    /* ★ Пропорции картинки задаёт JS — здесь ничего не форсируем */
   }
 
-  /* ★★ ИСПРАВЛЕНО: картинка всегда сохраняет пропорции
-     через object-fit: contain — на всех устройствах и ориентациях */
   .room-img {
     display: block;
     width: 100%;
@@ -86,7 +83,6 @@
     background: #3a2f4a;
   }
 
-  /* ===== ПОРТРЕТ (мобильный) ===== */
   @media (hover: none) and (pointer: coarse) and (orientation: portrait) {
     body {
       padding: 8px 6px;
@@ -98,8 +94,7 @@
     .room-wrap { display: block; border-radius: 12px; }
   }
 
-  /* ===== ЛАНДШАФТ (мобильный) — только компактный фонарик и оверлеи ===== */
-  /* ★ Никаких width/height для .room-img и .room-wrap — размеры задаёт JS */
+  /* ===== ЛАНДШАФТ ===== */
   @media (hover: none) and (pointer: coarse) and (orientation: landscape) {
     body {
       padding: 4px;
@@ -112,7 +107,6 @@
       display: block;
       border-radius: 10px;
     }
-    /* ★ Фонарик маленький и глубоко спрятан — не перекрывает книгу */
     .flashlight {
       --fw: 8%;
       --fhidden: 0.72;
@@ -122,41 +116,107 @@
       padding: 7px 18px;
       letter-spacing: 1px;
     }
-    .final-img {
-      max-height: 72vh;
-      max-width: 55vw;
+
+    /* ★★ ФИНАЛЬНЫЙ ЭКРАН В ЛАНДШАФТЕ — вписываем всё в экран через grid */
+    #endOverlay {
+      display: grid;
+      place-content: center;
+      place-items: center;
+      grid-auto-rows: min-content;
+      gap: 6px;
+      padding: 6px 16px;
+      overflow: hidden;
     }
-    #endOverlay { padding: 10px 20px; gap: 12px; }
     #endOverlay::before {
-      font-size: 1.2rem; letter-spacing: 14px; top: 2%;
+      display: none; /* декоративные эмодзи сверху не влезают — убираем */
     }
-    .final-caption { font-size: 1.1rem; letter-spacing: 2px; }
+    .final-img {
+      max-height: 52vh;
+      max-width: 40vw;
+      min-width: 0;
+      margin: 0;
+      border-radius: 10px;
+      box-shadow:
+        0 10px 30px rgba(0, 0, 0, 0.8),
+        0 0 0 3px rgba(255, 216, 138, 0.55),
+        0 0 40px rgba(255, 216, 138, 0.45);
+    }
+    .final-caption {
+      font-size: 0.95rem;
+      letter-spacing: 1.5px;
+      line-height: 1;
+      margin: 0;
+    }
     #endOverlay .btn-zigzag {
-      padding: 11px 32px; font-size: 0.98rem; letter-spacing: 2px;
+      padding: 9px 26px;
+      font-size: 0.85rem;
+      letter-spacing: 1.5px;
+      min-height: 36px;
+      min-width: 0;
+    }
+
+    /* Стартовый — тоже компактно (на всякий случай) */
+    #startOverlay {
+      display: grid;
+      place-content: center;
+      place-items: center;
+      grid-auto-rows: min-content;
+      gap: 8px;
+      padding: 8px 16px;
+    }
+    #startOverlay::before,
+    #startOverlay::after {
+      display: none;
     }
     #startOverlay .start-card {
-      gap: 12px; padding: 14px 20px;
+      gap: 8px;
+      padding: 8px 16px;
+      max-width: 560px;
     }
     #startOverlay .start-title {
-      font-size: 1.6rem; letter-spacing: 2px;
+      font-size: 1.4rem;
+      letter-spacing: 2px;
+      line-height: 1.05;
     }
     #startOverlay .start-title .accent {
-      letter-spacing: 4px; margin-top: 2px;
+      letter-spacing: 4px;
+      margin-top: 2px;
     }
     #startOverlay .start-subtitle {
-      font-size: 0.92rem; padding: 6px 14px; letter-spacing: 2px;
+      font-size: 0.82rem;
+      padding: 4px 12px;
+      letter-spacing: 2px;
     }
     #startOverlay .start-hint {
-      font-size: 0.78rem; max-width: 500px;
-    }
-    #startOverlay::before {
-      font-size: 1.2rem; letter-spacing: 14px; top: 3%;
-    }
-    #startOverlay::after {
-      font-size: 0.9rem; letter-spacing: 10px; bottom: 3%;
+      font-size: 0.72rem;
+      max-width: 480px;
+      line-height: 1.35;
     }
     #startOverlay .btn-zigzag {
-      padding: 12px 36px; font-size: 0.98rem; letter-spacing: 2px;
+      padding: 10px 32px;
+      font-size: 0.9rem;
+      letter-spacing: 2px;
+      min-height: 38px;
+    }
+  }
+
+  /* ★★ Очень низкие экраны (узкие телефоны в landscape) — ещё компактнее */
+  @media (orientation: landscape) and (max-height: 420px) {
+    #endOverlay {
+      gap: 4px;
+      padding: 4px 12px;
+    }
+    .final-img {
+      max-height: 46vh;
+      max-width: 34vw;
+    }
+    .final-caption {
+      font-size: 0.85rem;
+    }
+    #endOverlay .btn-zigzag {
+      padding: 8px 22px;
+      font-size: 0.8rem;
+      min-height: 32px;
     }
   }
 
@@ -700,16 +760,6 @@
     });
   }
 
-  // ============================================================
-  //  РАЗМЕР КОМНАТЫ — ВСЕГДА с сохранением пропорций
-  //  Через JS задаём пиксельные размеры .room-wrap.
-  //  .room-img внутри растягивается на 100% контейнера
-  //  и через object-fit: contain сохраняет пропорции.
-  //
-  //  Так как контейнер сам имеет точные пропорции картинки
-  //  (мы вычисляем их из naturalWidth/naturalHeight),
-  //  внутри не будет пустых полос — картинка заполняет точно.
-  // ============================================================
   function sizeRoom() {
     const stage = document.querySelector('.stage');
     const availW = stage.clientWidth;
@@ -722,11 +772,9 @@
 
     let w, h;
     if (availW / availH > aspect) {
-      // доступное место шире, чем картинка — ограничение по высоте
       h = availH;
       w = h * aspect;
     } else {
-      // ограничение по ширине
       w = availW;
       h = w / aspect;
     }
@@ -1090,9 +1138,6 @@
     document.addEventListener('touchstart', unlockAudio, { passive: true });
   }
 
-  // ★ После загрузки картинки получаем naturalWidth/Height и можем
-  //   вычислить точные пропорции. Переинициализацию не запускаем —
-  //   только пересчитываем размер контейнера.
   if (roomImg.complete && roomImg.naturalWidth) {
     init();
   } else {
