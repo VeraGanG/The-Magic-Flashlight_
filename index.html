@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5, user-scalable=yes">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>The Magic Flashlight</title>
 <style>
   :root {
@@ -30,11 +30,19 @@
     font-size: 16px;
     line-height: 1.5;
     height: 100vh;
+    height: 100dvh;
     overflow: hidden;
+    overscroll-behavior: none;
     display: flex;
     align-items: center;
     justify-content: center;
     padding: 10px;
+    /* Не мешает десктопу, блокирует случайный зум/скролл на телефоне */
+    touch-action: none;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+    -webkit-tap-highlight-color: transparent;
   }
 
   .stage {
@@ -61,6 +69,7 @@
     --beam-y: 42%;
     --beam-r: 200px;
     cursor: none;
+    touch-action: none;
   }
 
   .room-img {
@@ -73,6 +82,21 @@
     -webkit-user-drag: none;
     pointer-events: none;
     background: #3a2f4a;
+  }
+
+  /* ТОЛЬКО ДЛЯ ТАЧ-УСТРОЙСТВ: явные размеры, чтобы не схлопывалось в мини-окно */
+  @media (hover: none) and (pointer: coarse) {
+    .room-wrap {
+      width: min(94vw, 88vh);
+      height: min(94vw, 88vh);
+    }
+    .room-img {
+      width: 100%;
+      height: 100%;
+      max-width: none;
+      max-height: none;
+      object-fit: contain;
+    }
   }
 
   .hotspots {
@@ -88,6 +112,7 @@
     cursor: pointer;
     pointer-events: auto;
     -webkit-tap-highlight-color: transparent;
+    touch-action: none;
     outline: none;
   }
 
@@ -255,6 +280,8 @@
     transition: opacity 0.6s ease;
     padding: 20px;
     text-align: center;
+    /* На оверлеях скролл разрешён — они могут не влезть */
+    touch-action: pan-y;
   }
   .screen-overlay.active {
     opacity: 1;
@@ -506,15 +533,14 @@
   'use strict';
 
   // ============================================================
-  //  БАЗОВЫЙ НАБОР СЛОВ (не меняется)
-  //  Реальный порядок формируется заново в shuffleWords()
+  //  ОПРЕДЕЛЕНИЕ ТАЧ-УСТРОЙСТВА
+  //  На десктопе = false, на телефоне/планшете = true
   // ============================================================
-  const WORD_POOL = ['witch', 'bat', 'cat', 'lamp', 'book', 'pumpkin', 'table', 'ghost'];
+  const IS_TOUCH = window.matchMedia('(hover: none) and (pointer: coarse)').matches;
 
-  // Текущий (перемешанный) порядок. Заполняется при старте игры.
+  const WORD_POOL = ['witch', 'bat', 'cat', 'lamp', 'book', 'pumpkin', 'table', 'ghost'];
   let WORD_ORDER = [...WORD_POOL];
 
-  // Fisher-Yates — каждый раз новый порядок
   function shuffleWords() {
     const a = [...WORD_POOL];
     for (let i = a.length - 1; i > 0; i--) {
@@ -539,7 +565,8 @@
   const BEAM_MIN_RADIUS    = 160;
   const LIT_FACTOR         = 0.85;
   const DRIFT_SPEED = 8;
-  const FOLLOW_SPEED = 55;
+  // Мышь — плавное «ленивое» следование. Тач — мгновенное (иначе тап не успевает).
+  const FOLLOW_SPEED = IS_TOUCH ? 3000 : 55;
   const IDLE_TIMEOUT = 2200;
 
   const roomWrap         = document.getElementById('roomWrap');
@@ -628,7 +655,8 @@
   }
 
   function updateRadius() {
-    const rect = roomImg.getBoundingClientRect();
+    const rect = roomWrap.getBoundingClientRect();
+    if (rect.width === 0) return;
     state.radius = Math.max(BEAM_MIN_RADIUS, rect.width * BEAM_RADIUS_FACTOR);
     roomWrap.style.setProperty('--beam-r', state.radius + 'px');
   }
@@ -693,37 +721,67 @@
   }
 
   function initPointerTracking() {
-    const updateCursorTarget = (clientX, clientY) => {
-      const rect = roomImg.getBoundingClientRect();
+    // Клиентские координаты → проценты внутри комнаты
+    const toPercent = (clientX, clientY) => {
+      const rect = roomWrap.getBoundingClientRect();
+      if (rect.width === 0) return null;
       const inside =
         clientX >= rect.left && clientX <= rect.right &&
         clientY >= rect.top  && clientY <= rect.bottom;
-      if (!inside) { state.cursorTarget = null; return; }
-
-      state.cursorTarget = {
+      if (!inside) return null;
+      return {
         x: ((clientX - rect.left) / rect.width)  * 100,
         y: ((clientY - rect.top)  / rect.height) * 100
       };
-      state.lastPointerMove = performance.now();
     };
 
-    window.addEventListener('mousemove', (e) => updateCursorTarget(e.clientX, e.clientY));
+    // ==== МЫШЬ (десктоп) — ленивое следование ====
+    window.addEventListener('mousemove', (e) => {
+      const p = toPercent(e.clientX, e.clientY);
+      if (p) {
+        state.cursorTarget = p;
+        state.lastPointerMove = performance.now();
+      } else {
+        state.cursorTarget = null;
+      }
+    });
 
-    window.addEventListener('touchmove', (e) => {
-      if (!e.touches || e.touches.length === 0) return;
-      const t = e.touches[0];
-      updateCursorTarget(t.clientX, t.clientY);
-    }, { passive: true });
+    // ==== ТАЧ (телефон/планшет) — луч мгновенно следует за пальцем ====
+    // На тач-устройствах обновляем и cursorTarget, и beam напрямую,
+    // чтобы тап успевал попасть по освещённому объекту.
+    const updateTouch = (clientX, clientY) => {
+      const p = toPercent(clientX, clientY);
+      if (!p) return;
+      state.cursorTarget = p;
+      state.lastPointerMove = performance.now();
+
+      if (IS_TOUCH) {
+        state.beam.x = p.x;
+        state.beam.y = p.y;
+        updateBeamCSS();
+      }
+    };
 
     window.addEventListener('touchstart', (e) => {
       if (!e.touches || e.touches.length === 0) return;
       const t = e.touches[0];
-      updateCursorTarget(t.clientX, t.clientY);
+      updateTouch(t.clientX, t.clientY);
     }, { passive: true });
+
+    window.addEventListener('touchmove', (e) => {
+      // Блокируем скролл страницы вне оверлеев
+      if (e.target && e.target.closest && !e.target.closest('.screen-overlay')) {
+        e.preventDefault();
+      }
+      if (!e.touches || e.touches.length === 0) return;
+      const t = e.touches[0];
+      updateTouch(t.clientX, t.clientY);
+    }, { passive: false });
   }
 
   function isPointLit(clientX, clientY) {
-    const rect = roomImg.getBoundingClientRect();
+    const rect = roomWrap.getBoundingClientRect();
+    if (rect.width === 0) return false;
     const cx = rect.left + (state.beam.x / 100) * rect.width;
     const cy = rect.top  + (state.beam.y / 100) * rect.height;
     const d = Math.hypot(clientX - cx, clientY - cy);
@@ -814,7 +872,6 @@
   }
 
   function startGame() {
-    // ★ Каждый старт — новый порядок слов
     shuffleWords();
 
     startOverlay.classList.remove('active');
@@ -892,9 +949,16 @@
       updateBeamCSS();
     });
     window.addEventListener('orientationchange', () => {
-      setTimeout(() => { updateRadius(); updateBeamCSS(); }, 100);
+      setTimeout(() => { updateRadius(); updateBeamCSS(); }, 150);
     });
+    if ('visualViewport' in window) {
+      window.visualViewport.addEventListener('resize', () => {
+        updateRadius();
+        updateBeamCSS();
+      });
+    }
 
+    // Разблокировка звука на iOS (иначе первый звук «проглатывается»)
     document.addEventListener('pointerdown', function once() {
       ['switch','purr','laugh','victory'].forEach(k => {
         try {
