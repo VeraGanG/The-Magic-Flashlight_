@@ -233,9 +233,6 @@
     50% { transform: scale(1.2); }
   }
 
-  /* ==========================================================
-     ЭКРАНЫ
-     ========================================================== */
   .screen-overlay {
     position: fixed;
     inset: 0;
@@ -250,7 +247,6 @@
     padding: 20px;
     text-align: center;
     touch-action: pan-y;
-    /* ★ Разрешаем прокрутку, если контент не влезает */
     overflow-y: auto;
     overscroll-behavior: contain;
     -webkit-overflow-scrolling: touch;
@@ -360,9 +356,6 @@
   }
   .btn-zigzag:active { transform: translateY(0) scale(0.97); }
 
-  /* ==========================================================
-     ФИНАЛЬНЫЙ ЭКРАН
-     ========================================================== */
   #endOverlay {
     background:
       radial-gradient(circle at 50% 40%, rgba(255, 216, 138, 0.18) 0%, transparent 60%),
@@ -413,10 +406,6 @@
     margin: auto;
   }
 
-  /* ★★ ВАЖНО: все элементы #endOverlay центрируются через margin: auto,
-     а оверлей — через overflow-y: auto.
-     Это позволяет корректно отобразить экран и в портрете, и в landscape. */
-
   @media (max-width: 700px) {
     .flashlight { --fw: 44%; --fhidden: 0.50; }
     .btn-zigzag { padding: 20px 44px; letter-spacing: 3px; }
@@ -432,71 +421,26 @@
     .flashlight { --fw: 52%; }
   }
 
-  /* ★★★ ФИНАЛЬНЫЙ ЭКРАН В LANDSCAPE (когда мало высоты) — всё компактнее */
   @media (orientation: landscape) and (max-height: 560px) {
     #endOverlay {
       gap: 10px;
       padding: 12px 20px;
-      justify-content: center;
     }
     #endOverlay::before {
-      font-size: 1.2rem;
-      letter-spacing: 14px;
-      top: 2%;
-      opacity: 0.6;
+      font-size: 1.2rem; letter-spacing: 14px; top: 2%; opacity: 0.6;
     }
-    .final-img {
-      max-height: 55vh;
-      max-width: 52vw;
-      border-radius: 12px;
-    }
-    .final-caption {
-      font-size: 1.1rem;
-      letter-spacing: 2px;
-    }
-    #endOverlay .btn-zigzag {
-      padding: 12px 36px;
-      font-size: 1rem;
-      letter-spacing: 2px;
-    }
+    .final-img { max-height: 55vh; max-width: 52vw; border-radius: 12px; }
+    .final-caption { font-size: 1.1rem; letter-spacing: 2px; }
+    #endOverlay .btn-zigzag { padding: 12px 36px; font-size: 1rem; letter-spacing: 2px; }
 
-    /* Стартовый — тоже компактно, чтобы кнопка START не уезжала */
-    .start-card {
-      gap: 12px;
-      padding: 16px 20px;
-    }
-    .start-title {
-      font-size: 1.6rem;
-      letter-spacing: 2px;
-    }
-    .start-title .accent {
-      letter-spacing: 4px;
-      margin-top: 2px;
-    }
-    .start-subtitle {
-      font-size: 0.95rem;
-      padding: 6px 14px;
-      letter-spacing: 2px;
-    }
-    .start-hint {
-      font-size: 0.82rem;
-      max-width: 500px;
-    }
-    #startOverlay::before {
-      font-size: 1.4rem;
-      letter-spacing: 16px;
-      top: 3%;
-    }
-    #startOverlay::after {
-      font-size: 1rem;
-      letter-spacing: 12px;
-      bottom: 3%;
-    }
-    #startOverlay .btn-zigzag {
-      padding: 14px 40px;
-      font-size: 1.05rem;
-      letter-spacing: 2px;
-    }
+    .start-card { gap: 12px; padding: 16px 20px; }
+    .start-title { font-size: 1.6rem; letter-spacing: 2px; }
+    .start-title .accent { letter-spacing: 4px; margin-top: 2px; }
+    .start-subtitle { font-size: 0.95rem; padding: 6px 14px; letter-spacing: 2px; }
+    .start-hint { font-size: 0.82rem; max-width: 500px; }
+    #startOverlay::before { font-size: 1.4rem; letter-spacing: 16px; top: 3%; }
+    #startOverlay::after { font-size: 1rem; letter-spacing: 12px; bottom: 3%; }
+    #startOverlay .btn-zigzag { padding: 14px 40px; font-size: 1.05rem; letter-spacing: 2px; }
   }
 </style>
 </head>
@@ -550,7 +494,13 @@
 (function() {
   'use strict';
 
-  const IS_TOUCH = window.matchMedia('(hover: none) and (pointer: coarse)').matches;
+  // ============================================================
+  //  ★ ИСПРАВЛЕНО: более надёжное определение тач-устройства
+  // ============================================================
+  const IS_TOUCH =
+    ('ontouchstart' in window) ||
+    (navigator.maxTouchPoints > 0) ||
+    (navigator.msMaxTouchPoints > 0);
 
   const WORD_POOL = ['witch', 'bat', 'cat', 'lamp', 'book', 'pumpkin', 'table', 'ghost'];
   let WORD_ORDER = [...WORD_POOL];
@@ -564,7 +514,6 @@
     WORD_ORDER = a;
   }
 
-  // ★ Хотспоты увеличены — bat, cat, pumpkin, witch, lamp, ghost заметно больше
   const HOTSPOTS = [
     { item: 'table',   x: 20, y: 54, w: 67, h: 41, z: 1 },
     { item: 'book',    x: 30, y: 44, w: 32, h: 32, z: 2 },
@@ -578,7 +527,7 @@
 
   const BEAM_RADIUS_FACTOR = 0.22;
   const BEAM_MIN_RADIUS    = 140;
-  const LIT_FACTOR         = IS_TOUCH ? 1.0 : 0.85;
+  const LIT_FACTOR         = 1.0;
   const DRIFT_SPEED        = 8;
   const FOLLOW_SPEED       = IS_TOUCH ? 3000 : 55;
   const IDLE_TIMEOUT       = 2200;
@@ -586,6 +535,10 @@
   const TAP_TOLERANCE_PCT = 4;
   const TAP_MAX_MOVE_PX   = 18;
   const TAP_MAX_DURATION  = 900;
+
+  // ★ Защита от «click» сразу после «touchend» — не даём звучать двум звукам подряд
+  const CLICK_AFTER_TOUCH_GUARD = 600; // мс
+  let lastTouchEndTime = 0;
 
   const roomWrap         = document.getElementById('roomWrap');
   const roomImg          = document.getElementById('roomImg');
@@ -602,7 +555,7 @@
   const playAgainBtn     = document.getElementById('playAgainBtn');
 
   // ============================================================
-  //  ЗВУКИ — с корректной разблокировкой (исправление громкости)
+  //  АУДИО
   // ============================================================
   function makeAudio(src) {
     const a = new Audio();
@@ -628,9 +581,8 @@
   };
   sounds.background.loop = true;
 
-  // ★ Храним базовые громкости в отдельном объекте — не сбиваются при разблокировке
   const BASE_VOLUMES = {
-    background: 0.18,
+    background: 0.32,
     switch: 0.9, purr: 0.95, laugh: 0.85, victory: 0.9,
     witch: 1.0, bat: 1.0, cat: 1.0, lamp: 1.0, book: 1.0,
     pumpkin: 1.0, table: 1.0, ghost: 1.0
@@ -639,12 +591,10 @@
     sounds[k].volume = BASE_VOLUMES[k] != null ? BASE_VOLUMES[k] : 1.0;
   });
 
-  // ★★ ИСПРАВЛЕНИЕ: playSound больше не глотает ошибки currentTime
   function playSound(name) {
     const a = sounds[name];
     if (!a) return;
-    // Сброс позиции — отдельная попытка, чтобы сбой не мешал воспроизведению
-    try { a.currentTime = 0; } catch (e) { /* ok */ }
+    try { a.currentTime = 0; } catch (e) {}
     try {
       const p = a.play();
       if (p && p.catch) p.catch(() => {});
@@ -657,16 +607,20 @@
   }
   function stopAllWords() { WORD_POOL.forEach(k => stopSound(k)); }
 
-  // ★★★ ИСПРАВЛЕНИЕ: разблокировка теперь ВСЕГДА восстанавливает громкость,
-  // даже если play() отклонён (файл ещё не загрузился).
+  // ============================================================
+  //  ★★★ ИСПРАВЛЕНО: unlockAudio больше НЕ трогает background.mp3
+  //  Иначе фоновую музыку каждый тап ставит на паузу, и она исчезает.
+  // ============================================================
+  const UNLOCK_KEYS = ['switch','purr','laugh','victory','witch','bat','cat','lamp','book','pumpkin','table','ghost'];
   let audioUnlockAttempts = 0;
+
   function unlockAudio() {
-    // Разрешаем до 3 попыток — потому что к первому тапу mp3 могут быть не готовы
     if (audioUnlockAttempts >= 3) return;
     audioUnlockAttempts++;
 
-    Object.keys(sounds).forEach(k => {
+    UNLOCK_KEYS.forEach(k => {
       const a = sounds[k];
+      if (!a) return;
       const baseVol = BASE_VOLUMES[k] != null ? BASE_VOLUMES[k] : 1.0;
       try {
         a.volume = 0;
@@ -675,14 +629,9 @@
           try { a.pause(); a.currentTime = 0; } catch (e) {}
           try { a.volume = baseVol; } catch (e) {}
         };
-        if (p && p.then) {
-          // Восстанавливаем громкость в ЛЮБОМ случае — и при успехе, и при ошибке
-          p.then(restore).catch(restore);
-        } else {
-          restore();
-        }
+        if (p && p.then) p.then(restore).catch(restore);
+        else restore();
       } catch (e) {
-        // Восстанавливаем в любом случае
         try { a.volume = baseVol; } catch (e2) {}
       }
     });
@@ -714,11 +663,15 @@
       if (h.z) btn.style.zIndex = h.z;
       btn.setAttribute('aria-label', h.item);
 
-      // Click только для десктопа
+      // ★★★ ИСПРАВЛЕНО: click только для МЫШИ + защита от недавнего touchend.
       btn.addEventListener('click', (e) => {
+        // Если это было тач-устройство → игнорируем (обрабатывается в touchend)
         if (IS_TOUCH) return;
+        // Если недавно был touchend — игнорируем (защита от двойного звука)
+        if (performance.now() - lastTouchEndTime < CLICK_AFTER_TOUCH_GUARD) return;
         if (state.phase !== 'search') return;
         if (!isPointLit(e.clientX, e.clientY)) return;
+
         const currentWord = WORD_ORDER[state.currentIndex];
         if (h.item === currentWord) handleCorrect(h.item, e);
         else handleWrong();
@@ -737,13 +690,8 @@
     const nh = roomImg.naturalHeight || 1;
     const aspect = nw / nh;
     let w, h;
-    if (availW / availH > aspect) {
-      h = availH;
-      w = h * aspect;
-    } else {
-      w = availW;
-      h = w / aspect;
-    }
+    if (availW / availH > aspect) { h = availH; w = h * aspect; }
+    else { w = availW; h = w / aspect; }
     roomWrap.style.width  = Math.floor(w) + 'px';
     roomWrap.style.height = Math.floor(h) + 'px';
     updateRadius();
@@ -884,6 +832,9 @@
     }, { passive: false });
 
     window.addEventListener('touchend', (e) => {
+      // ★ Запоминаем время touchend — для защиты от «click» после него
+      lastTouchEndTime = performance.now();
+
       if (state.phase !== 'search') { touchInfo = null; return; }
       if (!touchInfo) return;
       const info = touchInfo;
@@ -901,7 +852,11 @@
     window.addEventListener('touchcancel', () => { touchInfo = null; }, { passive: true });
   }
 
+  // ★★★ ИСПРАВЛЕНО: добавлена проверка state.phase — чтобы при активном
+  // «пауза после правильного ответа» повторный тап не вызвал второй звук.
   function selectAt(clientX, clientY) {
+    if (state.phase !== 'search') return;
+
     const rect = roomWrap.getBoundingClientRect();
     if (rect.width === 0) return;
     const px = ((clientX - rect.left) / rect.width)  * 100;
@@ -916,11 +871,8 @@
       if (px >= h.x - T && px <= h.x + h.w + T &&
           py >= h.y - T && py <= h.y + h.h + T) {
         const currentWord = WORD_ORDER[state.currentIndex];
-        if (h.item === currentWord) {
-          handleCorrect(h.item, { clientX, clientY });
-        } else {
-          handleWrong();
-        }
+        if (h.item === currentWord) handleCorrect(h.item, { clientX, clientY });
+        else handleWrong();
         return;
       }
     }
@@ -936,6 +888,7 @@
   }
 
   function handleCorrect(item, e) {
+    // Защита от повторного вызова — но phase проверяется выше
     state.phase = 'pause';
     playSound('purr');
     flashZone(item);
@@ -952,7 +905,9 @@
     }, 1300);
   }
 
-  function handleWrong() { playSound('laugh'); }
+  function handleWrong() {
+    playSound('laugh');
+  }
 
   function flashZone(item) {
     const h = HOTSPOTS.find(x => x.item === item);
@@ -1001,16 +956,30 @@
   }
 
   function startGame() {
-    // ★ Ещё одна попытка разблокировать звук — на всякий случай
+    // Ещё одна попытка разблокировать короткие звуки (не трогает background)
     unlockAudio();
 
     shuffleWords();
     startOverlay.classList.remove('active');
 
+    // ★★★ ИСПРАВЛЕНО: запуск фоновой музыки в startGame — с явной установкой
+    // громкости и позиции. Так как это происходит в ответ на user gesture
+    // (тап по START), автоплей-политика не блокирует.
     try {
-      sounds.background.currentTime = 0;
-      const p = sounds.background.play();
-      if (p && p.catch) p.catch(() => {});
+      const bg = sounds.background;
+      bg.volume = BASE_VOLUMES.background;
+      bg.currentTime = 0;
+      const p = bg.play();
+      if (p && p.catch) p.catch(() => {
+        // Если браузер заблокировал — попробуем ещё раз чуть позже
+        setTimeout(() => {
+          try {
+            bg.volume = BASE_VOLUMES.background;
+            const p2 = bg.play();
+            if (p2 && p2.catch) p2.catch(() => {});
+          } catch (e) {}
+        }, 500);
+      });
     } catch (e) {}
 
     state.currentIndex = 0;
@@ -1091,7 +1060,7 @@
       });
     }
 
-    // ★★★ Разблокировка звука — с 3 попытками, каждая корректно восстанавливает громкость
+    // Разблокировка коротких звуков
     document.addEventListener('pointerdown', unlockAudio, { passive: true });
     document.addEventListener('touchstart', unlockAudio, { passive: true });
   }
