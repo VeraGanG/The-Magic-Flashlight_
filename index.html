@@ -84,7 +84,6 @@
     background: #3a2f4a;
   }
 
-  /* ===== МОБИЛЬНЫЙ РЕЖИМ ===== */
   @media (hover: none) and (pointer: coarse) {
     body {
       padding: 8px 6px;
@@ -93,11 +92,7 @@
       padding-left: max(6px, env(safe-area-inset-left));
       padding-right: max(6px, env(safe-area-inset-right));
     }
-    .room-wrap {
-      display: block;
-      border-radius: 12px;
-      /* Размер устанавливает JS — по фактическому соотношению сторон картинки */
-    }
+    .room-wrap { display: block; border-radius: 12px; }
     .room-img {
       width: 100%;
       height: 100%;
@@ -238,6 +233,9 @@
     50% { transform: scale(1.2); }
   }
 
+  /* ==========================================================
+     ЭКРАНЫ
+     ========================================================== */
   .screen-overlay {
     position: fixed;
     inset: 0;
@@ -252,6 +250,10 @@
     padding: 20px;
     text-align: center;
     touch-action: pan-y;
+    /* ★ Разрешаем прокрутку, если контент не влезает */
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
   }
   .screen-overlay.active { opacity: 1; pointer-events: auto; }
 
@@ -267,12 +269,14 @@
     position: absolute; top: 8%; left: 0; right: 0;
     text-align: center; font-size: 2.4rem; letter-spacing: 30px;
     opacity: 0.75; filter: drop-shadow(0 0 20px rgba(255, 169, 77, 0.5));
+    pointer-events: none;
   }
   #startOverlay::after {
     content: '✨  🌙  ✨';
     position: absolute; bottom: 6%; left: 0; right: 0;
     text-align: center; font-size: 1.8rem; letter-spacing: 24px;
     opacity: 0.65;
+    pointer-events: none;
   }
 
   .start-card {
@@ -280,6 +284,7 @@
     display: flex; flex-direction: column; align-items: center;
     gap: 22px; padding: 40px 32px;
     max-width: 620px; width: 100%;
+    margin: auto;
   }
 
   .start-title {
@@ -351,27 +356,32 @@
       drop-shadow(0 10px 26px rgba(255, 169, 77, 0.55))
       drop-shadow(0 0 20px rgba(255, 216, 138, 0.4));
     user-select: none; -webkit-user-select: none;
+    flex-shrink: 0;
   }
   .btn-zigzag:active { transform: translateY(0) scale(0.97); }
 
+  /* ==========================================================
+     ФИНАЛЬНЫЙ ЭКРАН
+     ========================================================== */
   #endOverlay {
     background:
       radial-gradient(circle at 50% 40%, rgba(255, 216, 138, 0.18) 0%, transparent 60%),
       linear-gradient(180deg, #1E1A2B 0%, #29243A 100%);
-    gap: 26px;
+    gap: 22px;
   }
   #endOverlay::before {
     content: '🎉  ✨  🏆  ✨  🎉';
-    position: absolute; top: 5%; left: 0; right: 0;
+    position: absolute; top: 4%; left: 0; right: 0;
     text-align: center; font-size: 2rem; letter-spacing: 26px;
     opacity: 0.85;
     filter: drop-shadow(0 0 22px rgba(255, 216, 138, 0.7));
+    pointer-events: none;
   }
 
   .final-img {
     display: block;
-    max-height: 62vh;
-    max-width: 88vw;
+    max-height: 55vh;
+    max-width: 80vw;
     width: auto; height: auto;
     border-radius: 20px;
     box-shadow:
@@ -380,6 +390,8 @@
       0 0 90px rgba(255, 216, 138, 0.45);
     position: relative; z-index: 1;
     animation: finalReveal 1.4s cubic-bezier(0.22, 1, 0.36, 1);
+    flex-shrink: 0;
+    margin: auto;
   }
   @keyframes finalReveal {
     0% { opacity: 0; transform: scale(0.82) translateY(30px); filter: brightness(0.4); }
@@ -397,14 +409,20 @@
       0 0 50px rgba(255, 169, 77, 0.7),
       0 4px 12px rgba(0, 0, 0, 0.7);
     position: relative; z-index: 1;
+    flex-shrink: 0;
+    margin: auto;
   }
+
+  /* ★★ ВАЖНО: все элементы #endOverlay центрируются через margin: auto,
+     а оверлей — через overflow-y: auto.
+     Это позволяет корректно отобразить экран и в портрете, и в landscape. */
 
   @media (max-width: 700px) {
     .flashlight { --fw: 44%; --fhidden: 0.50; }
     .btn-zigzag { padding: 20px 44px; letter-spacing: 3px; }
     .word-badge { font-size: 1.1rem; padding: 10px 22px; letter-spacing: 1.5px; }
     .start-card { padding: 24px 16px; gap: 18px; }
-    .final-img { max-height: 55vh; }
+    .final-img { max-height: 48vh; max-width: 85vw; }
   }
   @media (max-width: 420px) {
     .btn-zigzag { padding: 18px 36px; letter-spacing: 2px; }
@@ -412,6 +430,73 @@
     .start-subtitle { letter-spacing: 2px; padding: 8px 14px; }
     .word-badge { font-size: 1rem; padding: 9px 18px; }
     .flashlight { --fw: 52%; }
+  }
+
+  /* ★★★ ФИНАЛЬНЫЙ ЭКРАН В LANDSCAPE (когда мало высоты) — всё компактнее */
+  @media (orientation: landscape) and (max-height: 560px) {
+    #endOverlay {
+      gap: 10px;
+      padding: 12px 20px;
+      justify-content: center;
+    }
+    #endOverlay::before {
+      font-size: 1.2rem;
+      letter-spacing: 14px;
+      top: 2%;
+      opacity: 0.6;
+    }
+    .final-img {
+      max-height: 55vh;
+      max-width: 52vw;
+      border-radius: 12px;
+    }
+    .final-caption {
+      font-size: 1.1rem;
+      letter-spacing: 2px;
+    }
+    #endOverlay .btn-zigzag {
+      padding: 12px 36px;
+      font-size: 1rem;
+      letter-spacing: 2px;
+    }
+
+    /* Стартовый — тоже компактно, чтобы кнопка START не уезжала */
+    .start-card {
+      gap: 12px;
+      padding: 16px 20px;
+    }
+    .start-title {
+      font-size: 1.6rem;
+      letter-spacing: 2px;
+    }
+    .start-title .accent {
+      letter-spacing: 4px;
+      margin-top: 2px;
+    }
+    .start-subtitle {
+      font-size: 0.95rem;
+      padding: 6px 14px;
+      letter-spacing: 2px;
+    }
+    .start-hint {
+      font-size: 0.82rem;
+      max-width: 500px;
+    }
+    #startOverlay::before {
+      font-size: 1.4rem;
+      letter-spacing: 16px;
+      top: 3%;
+    }
+    #startOverlay::after {
+      font-size: 1rem;
+      letter-spacing: 12px;
+      bottom: 3%;
+    }
+    #startOverlay .btn-zigzag {
+      padding: 14px 40px;
+      font-size: 1.05rem;
+      letter-spacing: 2px;
+    }
   }
 </style>
 </head>
@@ -479,7 +564,7 @@
     WORD_ORDER = a;
   }
 
-  // ★ Хотспоты увеличены — особенно мелкие объекты, чтобы на них можно было попасть пальцем
+  // ★ Хотспоты увеличены — bat, cat, pumpkin, witch, lamp, ghost заметно больше
   const HOTSPOTS = [
     { item: 'table',   x: 20, y: 54, w: 67, h: 41, z: 1 },
     { item: 'book',    x: 30, y: 44, w: 32, h: 32, z: 2 },
@@ -498,9 +583,9 @@
   const FOLLOW_SPEED       = IS_TOUCH ? 3000 : 55;
   const IDLE_TIMEOUT       = 2200;
 
-  const TAP_TOLERANCE_PCT = 4;   // допуск вокруг хотспота, в % от размера комнаты
-  const TAP_MAX_MOVE_PX   = 18;  // больше этого — считаем драгом, не тапом
-  const TAP_MAX_DURATION  = 900; // мс
+  const TAP_TOLERANCE_PCT = 4;
+  const TAP_MAX_MOVE_PX   = 18;
+  const TAP_MAX_DURATION  = 900;
 
   const roomWrap         = document.getElementById('roomWrap');
   const roomImg          = document.getElementById('roomImg');
@@ -517,12 +602,13 @@
   const playAgainBtn     = document.getElementById('playAgainBtn');
 
   // ============================================================
-  //  АУДИО
+  //  ЗВУКИ — с корректной разблокировкой (исправление громкости)
   // ============================================================
   function makeAudio(src) {
     const a = new Audio();
     a.preload = 'auto';
     a.src = src;
+    a.load();
     return a;
   }
   const sounds = {
@@ -541,17 +627,28 @@
     ghost:      makeAudio('ghost.mp3')
   };
   sounds.background.loop = true;
-  sounds.background.volume = 0.18;
-  sounds.switch.volume  = 0.9;
-  sounds.purr.volume    = 0.95;
-  sounds.laugh.volume   = 0.85;
-  sounds.victory.volume = 0.9;
-  WORD_POOL.forEach(k => { sounds[k].volume = 1.0; });
 
+  // ★ Храним базовые громкости в отдельном объекте — не сбиваются при разблокировке
+  const BASE_VOLUMES = {
+    background: 0.18,
+    switch: 0.9, purr: 0.95, laugh: 0.85, victory: 0.9,
+    witch: 1.0, bat: 1.0, cat: 1.0, lamp: 1.0, book: 1.0,
+    pumpkin: 1.0, table: 1.0, ghost: 1.0
+  };
+  Object.keys(sounds).forEach(k => {
+    sounds[k].volume = BASE_VOLUMES[k] != null ? BASE_VOLUMES[k] : 1.0;
+  });
+
+  // ★★ ИСПРАВЛЕНИЕ: playSound больше не глотает ошибки currentTime
   function playSound(name) {
     const a = sounds[name];
     if (!a) return;
-    try { a.currentTime = 0; const p = a.play(); if (p && p.catch) p.catch(() => {}); } catch (e) {}
+    // Сброс позиции — отдельная попытка, чтобы сбой не мешал воспроизведению
+    try { a.currentTime = 0; } catch (e) { /* ok */ }
+    try {
+      const p = a.play();
+      if (p && p.catch) p.catch(() => {});
+    } catch (e) {}
   }
   function stopSound(name) {
     const a = sounds[name];
@@ -559,6 +656,37 @@
     try { a.pause(); a.currentTime = 0; } catch (e) {}
   }
   function stopAllWords() { WORD_POOL.forEach(k => stopSound(k)); }
+
+  // ★★★ ИСПРАВЛЕНИЕ: разблокировка теперь ВСЕГДА восстанавливает громкость,
+  // даже если play() отклонён (файл ещё не загрузился).
+  let audioUnlockAttempts = 0;
+  function unlockAudio() {
+    // Разрешаем до 3 попыток — потому что к первому тапу mp3 могут быть не готовы
+    if (audioUnlockAttempts >= 3) return;
+    audioUnlockAttempts++;
+
+    Object.keys(sounds).forEach(k => {
+      const a = sounds[k];
+      const baseVol = BASE_VOLUMES[k] != null ? BASE_VOLUMES[k] : 1.0;
+      try {
+        a.volume = 0;
+        const p = a.play();
+        const restore = () => {
+          try { a.pause(); a.currentTime = 0; } catch (e) {}
+          try { a.volume = baseVol; } catch (e) {}
+        };
+        if (p && p.then) {
+          // Восстанавливаем громкость в ЛЮБОМ случае — и при успехе, и при ошибке
+          p.then(restore).catch(restore);
+        } else {
+          restore();
+        }
+      } catch (e) {
+        // Восстанавливаем в любом случае
+        try { a.volume = baseVol; } catch (e2) {}
+      }
+    });
+  }
 
   const state = {
     phase: 'start',
@@ -586,7 +714,7 @@
       if (h.z) btn.style.zIndex = h.z;
       btn.setAttribute('aria-label', h.item);
 
-      // Click работает только на десктопе (на таче обрабатываем через touchend)
+      // Click только для десктопа
       btn.addEventListener('click', (e) => {
         if (IS_TOUCH) return;
         if (state.phase !== 'search') return;
@@ -600,11 +728,6 @@
     });
   }
 
-  // ============================================================
-  //  РАЗМЕР КОМНАТЫ
-  //  Десктоп: CSS-правила (inline-block + max-height).
-  //  Мобильный: JS считает по соотношению сторон картинки и даёт максимум площади.
-  // ============================================================
   function sizeRoomMobile() {
     if (!IS_TOUCH) return;
     const stage = document.querySelector('.stage');
@@ -615,11 +738,9 @@
     const aspect = nw / nh;
     let w, h;
     if (availW / availH > aspect) {
-      // ограничение по высоте
       h = availH;
       w = h * aspect;
     } else {
-      // ограничение по ширине
       w = availW;
       h = w / aspect;
     }
@@ -694,9 +815,6 @@
     if (state.rafId) { cancelAnimationFrame(state.rafId); state.rafId = null; }
   }
 
-  // ============================================================
-  //  ТОЧКА В ПРОЦЕНТАХ
-  // ============================================================
   function toPercent(clientX, clientY) {
     const rect = roomWrap.getBoundingClientRect();
     if (rect.width === 0) return null;
@@ -710,13 +828,9 @@
     };
   }
 
-  // ============================================================
-  //  МЫШЬ + ТАЧ
-  // ============================================================
   let touchInfo = null;
 
   function initPointerTracking() {
-    // ==== МЫШЬ (десктоп) — плавное следование ====
     window.addEventListener('mousemove', (e) => {
       if (IS_TOUCH) return;
       const p = toPercent(e.clientX, e.clientY);
@@ -728,7 +842,6 @@
       }
     });
 
-    // ==== ТАЧ ====
     window.addEventListener('touchstart', (e) => {
       if (state.phase !== 'search') return;
       if (!e.touches || e.touches.length === 0) return;
@@ -739,7 +852,6 @@
         startTime: performance.now(),
         moved: false
       };
-      // Луч мгновенно следует за пальцем
       const p = toPercent(t.clientX, t.clientY);
       if (p) {
         state.cursorTarget = p;
@@ -761,7 +873,6 @@
         const dy = t.clientY - touchInfo.startY;
         if (Math.hypot(dx, dy) > TAP_MAX_MOVE_PX) touchInfo.moved = true;
       }
-      // Луч мгновенно следует за пальцем
       const p = toPercent(t.clientX, t.clientY);
       if (p) {
         state.cursorTarget = p;
@@ -778,7 +889,6 @@
       const info = touchInfo;
       touchInfo = null;
 
-      // Если палец двигался — это драг луча, не тап
       if (info.moved) return;
       const dur = performance.now() - info.startTime;
       if (dur > TAP_MAX_DURATION) return;
@@ -791,10 +901,6 @@
     window.addEventListener('touchcancel', () => { touchInfo = null; }, { passive: true });
   }
 
-  // ============================================================
-  //  ВЫБОР ОБЪЕКТА ПО КООРДИНАТАМ ТАПА
-  //  С допуском вокруг хотспотов — чтобы маленькие объекты легко ловились
-  // ============================================================
   function selectAt(clientX, clientY) {
     const rect = roomWrap.getBoundingClientRect();
     if (rect.width === 0) return;
@@ -818,7 +924,6 @@
         return;
       }
     }
-    // ничего не попалось — молча ничего
   }
 
   function isPointLit(clientX, clientY) {
@@ -896,6 +1001,9 @@
   }
 
   function startGame() {
+    // ★ Ещё одна попытка разблокировать звук — на всякий случай
+    unlockAudio();
+
     shuffleWords();
     startOverlay.classList.remove('active');
 
@@ -983,23 +1091,9 @@
       });
     }
 
-    // Разблокировка звука (iOS / Android)
-    document.addEventListener('pointerdown', function once() {
-      ['switch','purr','laugh','victory'].forEach(k => {
-        try {
-          const a = sounds[k];
-          a.volume = 0;
-          const p = a.play();
-          if (p && p.then) {
-            p.then(() => {
-              a.pause(); a.currentTime = 0;
-              a.volume = k === 'purr' ? 0.95 : (k === 'laugh' ? 0.85 : 0.9);
-            }).catch(() => {});
-          }
-        } catch (e) {}
-      });
-      document.removeEventListener('pointerdown', once);
-    }, { once: true });
+    // ★★★ Разблокировка звука — с 3 попытками, каждая корректно восстанавливает громкость
+    document.addEventListener('pointerdown', unlockAudio, { passive: true });
+    document.addEventListener('touchstart', unlockAudio, { passive: true });
   }
 
   if (roomImg.complete && roomImg.naturalWidth) {
@@ -1009,7 +1103,6 @@
       init();
       sizeRoomMobile();
     }, { once: true });
-    // Резерв — на случай если load уже прошёл
     setTimeout(() => {
       if (!hotspotsEl.children.length) init();
       sizeRoomMobile();
