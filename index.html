@@ -70,14 +70,16 @@
     --beam-r: 200px;
     cursor: none;
     touch-action: none;
+    /* ★ Пропорции картинки задаёт JS — здесь ничего не форсируем */
   }
 
+  /* ★★ ИСПРАВЛЕНО: картинка всегда сохраняет пропорции
+     через object-fit: contain — на всех устройствах и ориентациях */
   .room-img {
     display: block;
-    max-height: 88vh;
-    max-width: 94vw;
-    width: auto;
-    height: auto;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
     user-select: none;
     -webkit-user-drag: none;
     pointer-events: none;
@@ -94,16 +96,10 @@
       padding-right: max(6px, env(safe-area-inset-right));
     }
     .room-wrap { display: block; border-radius: 12px; }
-    .room-img {
-      width: 100%;
-      height: 100%;
-      max-width: none;
-      max-height: none;
-      object-fit: contain;
-    }
   }
 
-  /* ===== ЛАНДШАФТ (мобильный) — пропорции сохранены, фонарик компактный ===== */
+  /* ===== ЛАНДШАФТ (мобильный) — только компактный фонарик и оверлеи ===== */
+  /* ★ Никаких width/height для .room-img и .room-wrap — размеры задаёт JS */
   @media (hover: none) and (pointer: coarse) and (orientation: landscape) {
     body {
       padding: 4px;
@@ -115,16 +111,8 @@
     .room-wrap {
       display: block;
       border-radius: 10px;
-      /* Размер задаёт JS — с сохранением пропорций, максимум по доступному месту */
     }
-    .room-img {
-      width: 100%;
-      height: 100%;
-      max-width: none;
-      max-height: none;
-      object-fit: contain;
-    }
-    /* ★ Фонарик сильно меньше и глубже спрятан — не перекрывает книгу */
+    /* ★ Фонарик маленький и глубоко спрятан — не перекрывает книгу */
     .flashlight {
       --fw: 8%;
       --fhidden: 0.72;
@@ -713,18 +701,20 @@
   }
 
   // ============================================================
-  //  РАЗМЕР КОМНАТЫ
-  //  • Портрет (touch) — contain, максимум по доступному месту
-  //  • Ландшафт (touch) — contain, но НЕ растягивается.
-  //    Максимум 96% ширины и 96% высоты.
-  //  • Десктоп — CSS (max-height: 88vh)
+  //  РАЗМЕР КОМНАТЫ — ВСЕГДА с сохранением пропорций
+  //  Через JS задаём пиксельные размеры .room-wrap.
+  //  .room-img внутри растягивается на 100% контейнера
+  //  и через object-fit: contain сохраняет пропорции.
+  //
+  //  Так как контейнер сам имеет точные пропорции картинки
+  //  (мы вычисляем их из naturalWidth/naturalHeight),
+  //  внутри не будет пустых полос — картинка заполняет точно.
   // ============================================================
-  function sizeRoomMobile() {
-    if (!IS_TOUCH) return;
-
+  function sizeRoom() {
     const stage = document.querySelector('.stage');
     const availW = stage.clientWidth;
     const availH = stage.clientHeight;
+    if (availW <= 0 || availH <= 0) return;
 
     const nw = roomImg.naturalWidth || 1;
     const nh = roomImg.naturalHeight || 1;
@@ -732,7 +722,7 @@
 
     let w, h;
     if (availW / availH > aspect) {
-      // ограничение по высоте
+      // доступное место шире, чем картинка — ограничение по высоте
       h = availH;
       w = h * aspect;
     } else {
@@ -743,6 +733,7 @@
 
     roomWrap.style.width  = Math.floor(w) + 'px';
     roomWrap.style.height = Math.floor(h) + 'px';
+
     updateRadius();
     updateBeamCSS();
   }
@@ -1020,7 +1011,7 @@
     state.driftT = 0;
     state.lastPointerMove = 0;
 
-    sizeRoomMobile();
+    sizeRoom();
     updateBeamCSS();
 
     darkness.classList.remove('on');
@@ -1063,7 +1054,7 @@
   function init() {
     initHotspots();
     initPointerTracking();
-    sizeRoomMobile();
+    sizeRoom();
     updateRadius();
     updateBeamCSS();
 
@@ -1071,25 +1062,25 @@
     playAgainBtn.addEventListener('click', playAgain);
 
     window.addEventListener('resize', () => {
-      sizeRoomMobile();
+      sizeRoom();
       updateRadius();
       updateBeamCSS();
     });
     window.addEventListener('orientationchange', () => {
       setTimeout(() => {
-        sizeRoomMobile();
+        sizeRoom();
         updateRadius();
         updateBeamCSS();
       }, 250);
       setTimeout(() => {
-        sizeRoomMobile();
+        sizeRoom();
         updateRadius();
         updateBeamCSS();
       }, 700);
     });
     if ('visualViewport' in window) {
       window.visualViewport.addEventListener('resize', () => {
-        sizeRoomMobile();
+        sizeRoom();
         updateRadius();
         updateBeamCSS();
       });
@@ -1099,21 +1090,24 @@
     document.addEventListener('touchstart', unlockAudio, { passive: true });
   }
 
+  // ★ После загрузки картинки получаем naturalWidth/Height и можем
+  //   вычислить точные пропорции. Переинициализацию не запускаем —
+  //   только пересчитываем размер контейнера.
   if (roomImg.complete && roomImg.naturalWidth) {
     init();
   } else {
     roomImg.addEventListener('load', () => {
       init();
-      sizeRoomMobile();
+      sizeRoom();
     }, { once: true });
     setTimeout(() => {
       if (!hotspotsEl.children.length) init();
-      sizeRoomMobile();
+      sizeRoom();
     }, 500);
   }
 
   window.addEventListener('load', () => {
-    sizeRoomMobile();
+    sizeRoom();
     updateRadius();
     updateBeamCSS();
   });
